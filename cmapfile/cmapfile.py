@@ -9,19 +9,21 @@
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
-# * Redistributions of source code must retain the above copyright
-#   notice, this list of conditions and the following disclaimer.
-# * Redistributions in binary form must reproduce the above copyright
-#   notice, this list of conditions and the following disclaimer in the
-#   documentation and/or other materials provided with the distribution.
-# * Neither the name of the copyright holders nor the names of any
-#   contributors may be used to endorse or promote products derived
-#   from this software without specific prior written permission.
+# * Redistributions of source code must retain the above copyright notice,
+#   this list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
 # LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
 # CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
 # SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
@@ -30,16 +32,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""Write Chimera map (CMAP) files.
+"""Write Chimera Map (CMAP) files.
 
-Chimera map (CMAP) files are HDF5 files containing series of 3D XYZ datasets.
+Cmapfile is a Python library and console script to write Chimera Map (CMAP)
+files, HDF5 files containing series of 3D XYZ datasets.
+
+CMAP files can be created from numpy arrays and various file formats
+containing volume data, e.g. BIN, TIFF, LSM, OIF, and OIB.
 
 CMAP files can be visualized using UCSF Chimera [2], a highly extensible
 program for interactive visualization and analysis of molecular structures
 and related data.
-
-The cmapfile module can create CMAP files from numpy arrays and various file
-formats containing volume data, e.g. BIN, TIFF, LSM, OIF, and OIB.
 
 For command line usage run ``python -m cmapfile --help``
 
@@ -49,16 +52,16 @@ For command line usage run ``python -m cmapfile --help``
 :Organization:
   Laboratory for Fluorescence Dynamics. University of California, Irvine
 
-:Version: 2018.8.30
+:Version: 2018.10.18
 
 Requirements
 ------------
 * `CPython 2.7 or 3.5+ <https://www.python.org>`_
 * `Numpy 1.13 <https://www.numpy.org>`_
 * `Scipy 1.0 <https://www.scipy.org>`_
-* `H5py 2.7 <https://www.h5py.org/>`_
-* `Tiffile 2018.8.29 <https://www.lfd.uci.edu/~gohlke/>`_
-* `Oiffile 2018.8.29 <https://www.lfd.uci.edu/~gohlke/>`_
+* `H5py 2.8 <https://www.h5py.org/>`_
+* `Tifffile 2018.10.18 <https://www.lfd.uci.edu/~gohlke/>`_
+* `Oiffile 2018.10.18 <https://www.lfd.uci.edu/~gohlke/>`_
 
 References
 ----------
@@ -118,11 +121,10 @@ Revisions
 
 from __future__ import division, print_function
 
-__version__ = '2018.8.30'
+__version__ = '2018.10.18'
 __docformat__ = 'restructuredtext en'
 __all__ = ('CmapFile', 'bin2cmap', 'tif2cmap', 'lsm2cmap', 'oif2cmap',
            'array2cmap')
-
 
 import sys
 import os
