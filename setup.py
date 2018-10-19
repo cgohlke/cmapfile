@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # cmapfile/setup.py
 
+"""Cmapfile package setuptools script."""
+
 import sys
 import re
 
@@ -10,7 +12,7 @@ with open('cmapfile/cmapfile.py') as fh:
     code = fh.read()
 
 version = re.search(r"__version__ = '(.*?)'", code).groups()[0]
-description = re.search(r'"""(.*)\.\n', code).groups()[0]
+description = re.search(r'"""(.*)\.[\r\n?|\n]', code).groups()[0]
 readme = re.search(r'[\r\n?|\n]{2}"""(.*)"""[\r\n?|\n]{2}from', code,
                    re.MULTILINE | re.DOTALL).groups()[0]
 license = re.search(r'(# Copyright.*?[\r\n?|\n])[\r\n?|\n]+""', code,
@@ -38,11 +40,11 @@ setup(
     packages=['cmapfile'],
     python_requires='>=2.7',
     install_requires=[
-        'numpy>=1.13',
-        'scipy>=1.1',
-        'h5py>=2.8',
-        'tiffile>=2018.8.28',
-        'oiffile>=2018.8.28'],
+        'numpy>=1.11.3',
+        'scipy>=1.0',
+        'h5py>=2.7',
+        'tifffile>=2018.10.18',
+        'oiffile>=2018.10.18'],
     entry_points={'console_scripts': ['cmapfile = cmapfile:main']},
     platforms=['any'],
     classifiers=[
