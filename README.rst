@@ -1,14 +1,15 @@
-Write Chimera map (CMAP) files
+Write Chimera Map (CMAP) files
 ==============================
 
-Chimera map (CMAP) files are HDF5 files containing series of 3D XYZ datasets.
+Cmapfile is a Python library and console script to write Chimera Map (CMAP)
+files, HDF5 files containing series of 3D XYZ datasets.
+
+CMAP files can be created from numpy arrays and various file formats
+containing volume data, e.g. BIN, TIFF, LSM, OIF, and OIB.
 
 CMAP files can be visualized using UCSF Chimera [2], a highly extensible
 program for interactive visualization and analysis of molecular structures
 and related data.
-
-The cmapfile module can create CMAP files from numpy arrays and various file
-formats containing volume data, e.g. BIN, TIFF, LSM, OIF, and OIB.
 
 For command line usage run ``python -m cmapfile --help``
 
@@ -18,16 +19,16 @@ For command line usage run ``python -m cmapfile --help``
 :Organization:
   Laboratory for Fluorescence Dynamics. University of California, Irvine
 
-:Version: 2018.8.30
+:Version: 2018.10.18
 
 Requirements
 ------------
 * `CPython 2.7 or 3.5+ <https://www.python.org>`_
 * `Numpy 1.13 <https://www.numpy.org>`_
 * `Scipy 1.0 <https://www.scipy.org>`_
-* `H5py 2.7 <https://www.h5py.org/>`_
-* `Tiffile 2018.8.29 <https://www.lfd.uci.edu/~gohlke/>`_
-* `Oiffile 2018.8.29 <https://www.lfd.uci.edu/~gohlke/>`_
+* `H5py 2.8 <https://www.h5py.org/>`_
+* `Tifffile 2018.10.18 <https://www.lfd.uci.edu/~gohlke/>`_
+* `Oiffile 2018.10.18 <https://www.lfd.uci.edu/~gohlke/>`_
 
 References
 ----------
