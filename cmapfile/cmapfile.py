@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # cmapfile.py
 
-# Copyright (c) 2014-2018, Christoph Gohlke
-# Copyright (c) 2014-2018, The Regents of the University of California
+# Copyright (c) 2014-2019, Christoph Gohlke
+# Copyright (c) 2014-2019, The Regents of the University of California
 # Produced at the Laboratory for Fluorescence Dynamics
 # All rights reserved.
 #
@@ -52,7 +52,7 @@ For command line usage run ``python -m cmapfile --help``
 :Organization:
   Laboratory for Fluorescence Dynamics. University of California, Irvine
 
-:Version: 2018.10.18
+:Version: 2019.1.1
 
 Requirements
 ------------
@@ -60,8 +60,8 @@ Requirements
 * `Numpy 1.13 <https://www.numpy.org>`_
 * `Scipy 1.0 <https://www.scipy.org>`_
 * `H5py 2.8 <https://www.h5py.org/>`_
-* `Tifffile 2018.10.18 <https://www.lfd.uci.edu/~gohlke/>`_
-* `Oiffile 2018.10.18 <https://www.lfd.uci.edu/~gohlke/>`_
+* `Tifffile 2019.1.1 <https://pypi.org/project/tifffile/>`_
+* `Oiffile 2019.1.1 <https://pypi.org/project/oiffile/>`_
 
 References
 ----------
@@ -112,6 +112,8 @@ The CMAP file format according to [1]::
 
 Revisions
 ---------
+2019.1.1
+    Update copyright.
 2018.8.30
     Move cmapfile.py into cmapfile package.
 2014.10.10
@@ -121,7 +123,7 @@ Revisions
 
 from __future__ import division, print_function
 
-__version__ = '2018.10.18'
+__version__ = '2019.1.1'
 __docformat__ = 'restructuredtext en'
 __all__ = ('CmapFile', 'bin2cmap', 'tif2cmap', 'lsm2cmap', 'oif2cmap',
            'array2cmap')
@@ -142,13 +144,13 @@ from oiffile import OifFile
 class CmapFile(h5py.File):
     """Write Chimera MAP formatted HDF5 file."""
 
-    def __init__(self, name, mode='w', *args, **kwargs):
+    def __init__(self, name, mode='w', **kwargs):
         """Create new HDF5 file object.
 
         See h5py.File for parameters.
 
         """
-        h5py.File.__init__(self, name=name, mode=mode, *args, **kwargs)
+        h5py.File.__init__(self, name=name, mode=mode, **kwargs)
         self.mapcounter = 0
 
     def addmap(self, data, name=None, step=None, origin=None,
@@ -410,9 +412,9 @@ def lsm2cmap(lsmfile, cmapfile=None, **kwargs):
                 pass
         # iterate over Tiff pages containing data
         pages = iter(series.pages)
-        for t in range(series.shape[0]):  # iterate over time axis
+        for _ in range(series.shape[0]):  # iterate over time axis
             data = []
-            for z in range(series.shape[1]):  # iterate over z slices
+            for _ in range(series.shape[1]):  # iterate over z slices
                 data.append(next(pages).asarray())
             data = numpy.vstack(data).reshape(series.shape[1:])
             for c in range(series.shape[2]):  # iterate over channels
@@ -573,7 +575,7 @@ def parse_files(files):
         pass
     try:  # glob pattern
         files = natural_sorted(glob.glob(files[0]))
-        files[0]  # validation
+        files[0]  # noqa: validation
         return files
     except Exception:
         raise ValueError('no files found')
