@@ -41,10 +41,10 @@ setup(
     python_requires='>=2.7',
     install_requires=[
         'numpy>=1.11.3',
-        'scipy>=1.0',
-        'h5py>=2.7',
-        'tifffile>=2018.10.18',
-        'oiffile>=2018.10.18'],
+        'scipy>=1.1',
+        'h5py>=2.8',
+        'tifffile>=2019.1.1',
+        'oiffile>=2019.1.1'],
     entry_points={'console_scripts': ['cmapfile = cmapfile:main']},
     platforms=['any'],
     classifiers=[
@@ -56,7 +56,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
