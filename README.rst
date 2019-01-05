@@ -19,7 +19,7 @@ For command line usage run ``python -m cmapfile --help``
 :Organization:
   Laboratory for Fluorescence Dynamics. University of California, Irvine
 
-:Version: 2018.10.18
+:Version: 2019.1.1
 
 Requirements
 ------------
@@ -27,8 +27,8 @@ Requirements
 * `Numpy 1.13 <https://www.numpy.org>`_
 * `Scipy 1.0 <https://www.scipy.org>`_
 * `H5py 2.8 <https://www.h5py.org/>`_
-* `Tifffile 2018.10.18 <https://www.lfd.uci.edu/~gohlke/>`_
-* `Oiffile 2018.10.18 <https://www.lfd.uci.edu/~gohlke/>`_
+* `Tifffile 2019.1.1 <https://pypi.org/project/tifffile/>`_
+* `Oiffile 2019.1.1 <https://pypi.org/project/oiffile/>`_
 
 References
 ----------
@@ -79,6 +79,8 @@ The CMAP file format according to [1]::
 
 Revisions
 ---------
+2019.1.1
+    Update copyright.
 2018.8.30
     Move cmapfile.py into cmapfile package.
 2014.10.10
