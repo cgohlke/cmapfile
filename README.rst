@@ -19,24 +19,26 @@ For command line usage run ``python -m cmapfile --help``
 :Organization:
   Laboratory for Fluorescence Dynamics. University of California, Irvine
 
-:Version: 2019.1.1
+:License: BSD 3-Clause
+
+:Version: 2020.1.1
 
 Requirements
 ------------
-* `CPython 2.7 or 3.5+ <https://www.python.org>`_
-* `Numpy 1.13 <https://www.numpy.org>`_
-* `Scipy 1.0 <https://www.scipy.org>`_
-* `H5py 2.8 <https://www.h5py.org/>`_
+* `CPython >= 3.6 <https://www.python.org>`_
+* `Numpy 1.14 <https://www.numpy.org>`_
+* `Scipy 1.1 <https://www.scipy.org>`_
+* `H5py 2.10 <https://www.h5py.org/>`_
 * `Tifffile 2019.1.1 <https://pypi.org/project/tifffile/>`_
-* `Oiffile 2019.1.1 <https://pypi.org/project/oiffile/>`_
+* `Oiffile 2020.1.1 <https://pypi.org/project/oiffile/>`_
 
 References
 ----------
-(1) Thomas Goddard. [Chimera-users] reading in hdf5 files in chimera.
-    https://www.cgl.ucsf.edu/pipermail/chimera-users/2008-September/003052.html
-(2) UCSF Chimera, an extensible molecular modeling system.
-    https://www.cgl.ucsf.edu/chimera/
-(3) Globals for Images - SimFCS. https://www.lfd.uci.edu/globals/
+1. Thomas Goddard. [Chimera-users] reading in hdf5 files in chimera.
+   https://www.cgl.ucsf.edu/pipermail/chimera-users/2008-September/003052.html
+2. UCSF Chimera, an extensible molecular modeling system.
+   https://www.cgl.ucsf.edu/chimera/
+3. Globals for Images - SimFCS. https://www.lfd.uci.edu/globals/
 
 Examples
 --------
@@ -79,7 +81,9 @@ The CMAP file format according to [1]::
 
 Revisions
 ---------
-2019.1.1
+2020.1.1
+    Do not write name attribute.
+    Remove support for Python 2.7 and 3.5.
     Update copyright.
 2018.8.30
     Move cmapfile.py into cmapfile package.
