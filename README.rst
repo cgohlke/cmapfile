@@ -21,16 +21,16 @@ For command line usage run ``python -m cmapfile --help``
 
 :License: BSD 3-Clause
 
-:Version: 2020.1.1
+:Version: 2021.2.26
 
 Requirements
 ------------
-* `CPython >= 3.6 <https://www.python.org>`_
-* `Numpy 1.14 <https://www.numpy.org>`_
-* `Scipy 1.1 <https://www.scipy.org>`_
+* `CPython >= 3.7 <https://www.python.org>`_
+* `Numpy 1.15 <https://www.numpy.org>`_
+* `Scipy 1.4 <https://www.scipy.org>`_
 * `H5py 2.10 <https://www.h5py.org/>`_
-* `Tifffile 2019.1.1 <https://pypi.org/project/tifffile/>`_
-* `Oiffile 2020.1.1 <https://pypi.org/project/oiffile/>`_
+* `Tifffile 2019.8.25 <https://pypi.org/project/tifffile/>`_
+* `Oiffile 2020.9.18 <https://pypi.org/project/oiffile/>`_
 
 References
 ----------
@@ -78,9 +78,11 @@ The CMAP file format according to [1]::
         subsample_spacing (2, 2, 2) (attribute)
      (more subsampled or alternate chunkshape versions of same data)
 
-
 Revisions
 ---------
+2021.2.26
+    Fix LSM conversion with tifffile >= 2021.2.26.
+    Remove support for Python 3.6 (NEP 29).
 2020.1.1
     Do not write name attribute.
     Remove support for Python 2.7 and 3.5.
