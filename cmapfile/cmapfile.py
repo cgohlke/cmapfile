@@ -1,6 +1,6 @@
 # cmapfile.py
 
-# Copyright (c) 2014-2020, Christoph Gohlke
+# Copyright (c) 2014-2021, Christoph Gohlke
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -51,16 +51,16 @@ For command line usage run ``python -m cmapfile --help``
 
 :License: BSD 3-Clause
 
-:Version: 2020.1.1
+:Version: 2021.2.26
 
 Requirements
 ------------
-* `CPython >= 3.6 <https://www.python.org>`_
-* `Numpy 1.14 <https://www.numpy.org>`_
-* `Scipy 1.1 <https://www.scipy.org>`_
+* `CPython >= 3.7 <https://www.python.org>`_
+* `Numpy 1.15 <https://www.numpy.org>`_
+* `Scipy 1.4 <https://www.scipy.org>`_
 * `H5py 2.10 <https://www.h5py.org/>`_
-* `Tifffile 2019.1.1 <https://pypi.org/project/tifffile/>`_
-* `Oiffile 2020.1.1 <https://pypi.org/project/oiffile/>`_
+* `Tifffile 2019.8.25 <https://pypi.org/project/tifffile/>`_
+* `Oiffile 2020.9.18 <https://pypi.org/project/oiffile/>`_
 
 References
 ----------
@@ -108,9 +108,11 @@ The CMAP file format according to [1]::
         subsample_spacing (2, 2, 2) (attribute)
      (more subsampled or alternate chunkshape versions of same data)
 
-
 Revisions
 ---------
+2021.2.26
+    Fix LSM conversion with tifffile >= 2021.2.26.
+    Remove support for Python 3.6 (NEP 29).
 2020.1.1
     Do not write name attribute.
     Remove support for Python 2.7 and 3.5.
@@ -122,10 +124,15 @@ Revisions
 
 """
 
-__version__ = '2020.1.1'
+__version__ = '2021.2.26'
 
 __all__ = (
-    'CmapFile', 'bin2cmap', 'tif2cmap', 'lsm2cmap', 'oif2cmap', 'array2cmap'
+    'CmapFile',
+    'bin2cmap',
+    'tif2cmap',
+    'lsm2cmap',
+    'oif2cmap',
+    'array2cmap',
 )
 
 import sys
@@ -157,10 +164,22 @@ class CmapFile(h5py.File):
         h5py.File.__init__(self, name=filename, mode=mode, **kwargs)
         self.mapcounter = 0
 
-    def addmap(self, data, name=None, step=None, origin=None,
-               cell_angles=None, rotation_axis=None, rotation_angle=None,
-               symmetries=None, astype=None, subsample=16, chunks=True,
-               compression=None, verbose=False):
+    def addmap(
+        self,
+        data,
+        name=None,
+        step=None,
+        origin=None,
+        cell_angles=None,
+        rotation_axis=None,
+        rotation_angle=None,
+        symmetries=None,
+        astype=None,
+        subsample=16,
+        chunks=True,
+        compression=None,
+        verbose=False,
+    ):
         """Create HDF5 group and datasets according to CMAP format.
 
         The order of axes is XYZ for 'step', 'origin', 'cell_angles', and
@@ -199,13 +218,13 @@ class CmapFile(h5py.File):
             If False (default), do not print messages to stdout.
 
         """
-        data = numpy.atleast_3d(data)
-        if data.ndim != 3:
-            raise ValueError('map data must be 3 dimensional')
         if astype:
             data = numpy.ascontiguousarray(data, astype)
         else:
             data = numpy.ascontiguousarray(data)
+        if data.ndim != 3:
+            raise ValueError('map data must be 3 dimensional')
+
         # create group and write attributes
         group = self.create_group(f'map{self.mapcounter:05d}')
 
@@ -231,17 +250,23 @@ class CmapFile(h5py.File):
         # create main dataset
         if verbose:
             print('1 ', end='', flush=True)
-        dset = group.create_dataset(f'data{self.mapcounter:05d}',
-                                    data=data, chunks=chunks,
-                                    compression=compression)
+        dset = group.create_dataset(
+            f'data{self.mapcounter:05d}',
+            data=data,
+            chunks=chunks,
+            compression=compression,
+        )
         # create subsampled datasets
         for i, data in enumerate(subsamples(data, int(subsample))):
-            sample = 2**(i + 1)
+            sample = 2 ** (i + 1)
             if verbose:
                 print(f'{sample} ', end='', flush=True)
             dset = group.create_dataset(
                 f'data{self.mapcounter:05d}_{i + 2}',
-                data=data, chunks=chunks, compression=compression)
+                data=data,
+                chunks=chunks,
+                compression=compression,
+            )
             dset.attrs['subsample_spacing'] = sample, sample, sample
         self.mapcounter += 1
 
@@ -259,8 +284,9 @@ class CmapFile(h5py.File):
                 group.attrs.modify('step', step)
 
 
-def bin2cmap(binfiles, shape, dtype, offset=0, cmapfile=None, fail=True,
-             **kwargs):
+def bin2cmap(
+    binfiles, shape, dtype, offset=0, cmapfile=None, fail=True, **kwargs
+):
     r"""Convert series of SimFCS BIN files to Chimera MAP file.
 
     SimFCS BIN files contain homogeneous data of any type and shape,
@@ -398,19 +424,24 @@ def lsm2cmap(lsmfile, cmapfile=None, **kwargs):
         # open LSM file
         lsm = TiffFile(lsmfile)
         series = lsm.series[0]  # first series contains the image data
-        if series.axes != 'TZCYX':
-            raise ValueError(
-                f'not a 5D LSM file (expected TZCYX, got {series.axes})'
-            )
+        if hasattr(series, 'get_shape'):
+            # tifffile > 2020.2.25 return squeezed shape and axes
+            shape = series.get_shape(False)
+            axes = series.get_axes(False)
+        else:
+            shape = series.shape
+            axes = series.axes
+        if axes != 'TZCYX':
+            raise ValueError(f'not a 5D LSM file (expected TZCYX, got {axes})')
         if verbose:
             print(lsm)
-            print(series.shape, series.axes, flush=True)
+            print(shape, axes, flush=True)
         # create one CMAP file per channel
         if cmapfile:
             cmapfile = '{}.ch%04d{}'.format(*os.path.splitext(cmapfile))
         else:
             cmapfile = f'{lsmfile}.ch%04d.cmap'
-        cmaps = [CmapFile(cmapfile % i) for i in range(series.shape[2])]
+        cmaps = [CmapFile(cmapfile % i) for i in range(shape[2])]
         # voxel/step sizes
         if not kwargs.get('step', None):
             try:
@@ -418,17 +449,18 @@ def lsm2cmap(lsmfile, cmapfile=None, **kwargs):
                 kwargs['step'] = (
                     attrs['voxel_size_x'] / attrs['voxel_size_x'],
                     attrs['voxel_size_y'] / attrs['voxel_size_x'],
-                    attrs['voxel_size_z'] / attrs['voxel_size_x'])
+                    attrs['voxel_size_z'] / attrs['voxel_size_x'],
+                )
             except Exception:
                 pass
         # iterate over Tiff pages containing data
         pages = iter(series.pages)
-        for _ in range(series.shape[0]):  # iterate over time axis
+        for _ in range(shape[0]):  # iterate over time axis
             data = []
-            for _ in range(series.shape[1]):  # iterate over z slices
+            for _ in range(shape[1]):  # iterate over z slices
                 data.append(next(pages).asarray())
-            data = numpy.vstack(data).reshape(series.shape[1:])
-            for c in range(series.shape[2]):  # iterate over channels
+            data = numpy.vstack(data).reshape(shape[1:])
+            for c in range(shape[2]):  # iterate over channels
                 # write datasets and attributes
                 cmaps[c].addmap(data=data[:, c], **kwargs)
     finally:
@@ -465,8 +497,10 @@ def array2cmap(data, axes, cmapfile, **kwargs):
         if cmapfile.lower().endswith('.cmap'):
             cmapfile = cmapfile[:-5]
         if data.shape[0] > 1:
-            cmaps = [CmapFile(f'{cmapfile}.ch{i:04d}.cmap')
-                     for i in range(data.shape[0])]
+            cmaps = [
+                CmapFile(f'{cmapfile}.ch{i:04d}.cmap')
+                for i in range(data.shape[0])
+            ]
         else:
             cmaps = [CmapFile(f'{cmapfile}.cmap')]
         # iterate over data and write cmaps
@@ -516,7 +550,8 @@ def oif2cmap(oiffile, cmapfile=None, **kwargs):
                 kwargs['step'] = (
                     1.0,
                     (size['Y'] / (shape[-2] - 1)) / xsize,
-                    (size['Z'] / (shape[axes.index('Z')] - 1)) / xsize)
+                    (size['Z'] / (shape[axes.index('Z')] - 1)) / xsize,
+                )
             except Exception:
                 pass
     if cmapfile is None:
@@ -607,26 +642,57 @@ def main(argv=None):
     parser = optparse.OptionParser(
         usage='usage: %prog [options] files',
         description='Convert volume data files to Chimera MAP files.',
-        version=f'%prog {__version__}', prog='cmapfile')
+        version=f'%prog {__version__}',
+        prog='cmapfile',
+    )
 
     opt = parser.add_option
     opt('-q', '--quiet', dest='verbose', action='store_false', default=True)
-    opt('--filetype', dest='filetype', default=None,
-        help='type of input file(s), e.g. BIN, LSM, OIF, TIF')
-    opt('--dtype', dest='dtype', default=None,
-        help='type of data in BIN files. e.g. uint16')
-    opt('--shape', dest='shape', default=None,
-        help='shape of data in BIN files in F order, e.g. 256,256,32')
-    opt('--offset', dest='offset', type='int', default=0,
-        help='number of bytes to skip at beginning of BIN files')
-    opt('--step', dest='step', default=None,
-        help='stepsize of data in files in F order, e.g. 1.0,1.0,8.0')
-    opt('--cmap', dest='cmap', default=None,
-        help='name of output CMAP file')
-    opt('--astype', dest='astype', default=None,
-        help='type of data in CMAP file. e.g. float32')
-    opt('--subsample', dest='subsample', type='int', default=16,
-        help='write subsampled datasets to CMAP file')
+    opt(
+        '--filetype',
+        dest='filetype',
+        default=None,
+        help='type of input file(s), e.g. BIN, LSM, OIF, TIF',
+    )
+    opt(
+        '--dtype',
+        dest='dtype',
+        default=None,
+        help='type of data in BIN files. e.g. uint16',
+    )
+    opt(
+        '--shape',
+        dest='shape',
+        default=None,
+        help='shape of data in BIN files in F order, e.g. 256,256,32',
+    )
+    opt(
+        '--offset',
+        dest='offset',
+        type='int',
+        default=0,
+        help='number of bytes to skip at beginning of BIN files',
+    )
+    opt(
+        '--step',
+        dest='step',
+        default=None,
+        help='stepsize of data in files in F order, e.g. 1.0,1.0,8.0',
+    )
+    opt('--cmap', dest='cmap', default=None, help='name of output CMAP file')
+    opt(
+        '--astype',
+        dest='astype',
+        default=None,
+        help='type of data in CMAP file. e.g. float32',
+    )
+    opt(
+        '--subsample',
+        dest='subsample',
+        type='int',
+        default=16,
+        help='write subsampled datasets to CMAP file',
+    )
 
     options, files = parser.parse_args()
     if not files:
@@ -656,7 +722,8 @@ def main(argv=None):
             cmapfile=options.cmap,
             astype=options.astype,
             subsample=options.subsample,
-            verbose=options.verbose)
+            verbose=options.verbose,
+        )
     elif filetype in ('OIB', 'OIF'):
         if len(files) > 1:
             warnings.warn('too many input files')
@@ -666,7 +733,8 @@ def main(argv=None):
             cmapfile=options.cmap,
             astype=options.astype,
             subsample=options.subsample,
-            verbose=options.verbose)
+            verbose=options.verbose,
+        )
     elif filetype in ('TIF', 'TIFF'):
         tif2cmap(
             files,
@@ -674,13 +742,16 @@ def main(argv=None):
             cmapfile=options.cmap,
             astype=options.astype,
             subsample=options.subsample,
-            verbose=options.verbose)
+            verbose=options.verbose,
+        )
     elif filetype == 'CMAP':
         if not step:
             parser.error('no step size specified for CMAP file')
         if options.verbose:
-            print(f"Changing step size in '{os.path.basename(files[0])}'",
-                  flush=True)
+            print(
+                f"Changing step size in '{os.path.basename(files[0])}'",
+                flush=True,
+            )
         with CmapFile(files[0], mode='r+') as cmap:
             cmap.setstep(step)
     elif options.dtype and options.shape:
@@ -693,7 +764,8 @@ def main(argv=None):
             cmapfile=options.cmap,
             astype=options.astype,
             subsample=options.subsample,
-            verbose=options.verbose)
+            verbose=options.verbose,
+        )
     else:
         if not options.shape:
             parser.error('no data shape specified')
