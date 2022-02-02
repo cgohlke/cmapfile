@@ -1,6 +1,6 @@
 # cmapfile.py
 
-# Copyright (c) 2014-2021, Christoph Gohlke
+# Copyright (c) 2014-2022, Christoph Gohlke
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -51,16 +51,19 @@ For command line usage run ``python -m cmapfile --help``
 
 :License: BSD 3-Clause
 
-:Version: 2021.2.26
+:Version: 2022.2.2
 
 Requirements
 ------------
-* `CPython >= 3.7 <https://www.python.org>`_
-* `Numpy 1.15 <https://www.numpy.org>`_
-* `Scipy 1.4 <https://www.scipy.org>`_
-* `H5py 2.10 <https://www.h5py.org/>`_
-* `Tifffile 2019.8.25 <https://pypi.org/project/tifffile/>`_
-* `Oiffile 2020.9.18 <https://pypi.org/project/oiffile/>`_
+This release has been tested with the following requirements and dependencies
+(other versions may work):
+
+* `CPython 3.8.10, 3.9.9, 3.10.1, 64-bit <https://www.python.org>`_
+* `Numpy 1.21.5 <https://pypi.org/project/numpy/>`_
+* `Scipy 1.7.3 <https://pypi.org/project/scipy/>`_
+* `H5py 3.6.0 <https://pypi.org/project/h5py/>`_
+* `Tifffile 2021.11.2  <https://pypi.org/project/tifffile/>`_  (optional)
+* `Oiffile 2021.6.6 <https://pypi.org/project/oiffile />`_ (optional)
 
 References
 ----------
@@ -110,6 +113,9 @@ The CMAP file format according to [1]::
 
 Revisions
 ---------
+2022.2.2
+    Add type hints.
+    Drop support for Python 3.7 and numpy < 1.19 (NEP29).
 2021.2.26
     Fix LSM conversion with tifffile >= 2021.2.26.
     Remove support for Python 3.6 (NEP 29).
@@ -124,16 +130,18 @@ Revisions
 
 """
 
-__version__ = '2021.2.26'
+from __future__ import annotations
 
-__all__ = (
+__version__ = '2022.2.2'
+
+__all__ = [
     'CmapFile',
     'bin2cmap',
     'tif2cmap',
     'lsm2cmap',
     'oif2cmap',
     'array2cmap',
-)
+]
 
 import sys
 import os
@@ -151,11 +159,18 @@ except ImportError:
 from tifffile import TiffFile, transpose_axes, natural_sorted, product
 from oiffile import OifFile
 
+from typing import Any, Union, Sequence, Iterator
+
+ArrayLike = Union[numpy.ndarray, list, tuple]
+PathLike = Union[str, os.PathLike]
+
 
 class CmapFile(h5py.File):
     """Write Chimera MAP formatted HDF5 file."""
 
-    def __init__(self, filename, mode='w', **kwargs):
+    mapcounter: int
+
+    def __init__(self, filename: PathLike, mode: str = 'w', **kwargs) -> None:
         """Create new HDF5 file object.
 
         See h5py.File for parameters.
@@ -166,20 +181,20 @@ class CmapFile(h5py.File):
 
     def addmap(
         self,
-        data,
-        name=None,
-        step=None,
-        origin=None,
+        data: ArrayLike,
+        name: str | None = None,
+        step: Sequence[float] | None = None,
+        origin: Sequence[float] | None = None,
         cell_angles=None,
-        rotation_axis=None,
-        rotation_angle=None,
+        rotation_axis: Sequence[float] | None = None,
+        rotation_angle: float | None = None,
         symmetries=None,
-        astype=None,
-        subsample=16,
-        chunks=True,
-        compression=None,
-        verbose=False,
-    ):
+        astype: numpy.dtype = None,
+        subsample: int = 16,
+        chunks: bool = True,
+        compression: str | None = None,
+        verbose: bool = False,
+    ) -> None:
         """Create HDF5 group and datasets according to CMAP format.
 
         The order of axes is XYZ for 'step', 'origin', 'cell_angles', and
@@ -270,7 +285,7 @@ class CmapFile(h5py.File):
             dset.attrs['subsample_spacing'] = sample, sample, sample
         self.mapcounter += 1
 
-    def setstep(self, step):
+    def setstep(self, step: Sequence[float]) -> None:
         """Set 'step' attribute on all datasets.
 
         Parameters
@@ -285,8 +300,14 @@ class CmapFile(h5py.File):
 
 
 def bin2cmap(
-    binfiles, shape, dtype, offset=0, cmapfile=None, fail=True, **kwargs
-):
+    binfiles: Sequence[PathLike] | str,
+    shape: tuple[int, ...],
+    dtype: numpy.dtype,
+    offset: int = 0,
+    cmapfile: PathLike | None = None,
+    fail: bool = True,
+    **kwargs,
+) -> None:
     r"""Convert series of SimFCS BIN files to Chimera MAP file.
 
     SimFCS BIN files contain homogeneous data of any type and shape,
@@ -310,13 +331,13 @@ def bin2cmap(
         derived from the first BIN file.
     fail : bool, optional
         If True (default), raise error when reading invalid BIN files.
-    kwargs : dict, optional
+    **kwargs
         Additional parameters passed to the CmapFile.addmap function,
         e.g. verbose, step, origin, cell_angles, rotation_axis,
         rotation_angle, subsample, chunks, and compression.
 
     """
-    binfiles = parse_files(binfiles)
+    binfiles_list = parse_files(binfiles)
     validate_shape(shape, 3)
     shape = tuple(shape)
     dtype = numpy.dtype(dtype)
@@ -324,12 +345,12 @@ def bin2cmap(
     if count < 0:
         count = -1
     if not cmapfile:
-        cmapfile = binfiles[0] + '.cmap'
+        cmapfile = os.fspath(binfiles_list[0]) + '.cmap'
     verbose = kwargs.get('verbose', False)
     if verbose:
         print(f"Creating '{cmapfile}'", flush=True)
     with CmapFile(cmapfile, 'w') as cmap:
-        for binfile in binfiles:
+        for binfile in binfiles_list:
             if verbose:
                 print('+', os.path.basename(binfile), end=' ', flush=True)
             try:
@@ -349,7 +370,12 @@ def bin2cmap(
                 print(flush=True)
 
 
-def tif2cmap(tiffiles, cmapfile=None, fail=True, **kwargs):
+def tif2cmap(
+    tiffiles: Sequence[PathLike],
+    cmapfile: PathLike | None = None,
+    fail: bool = True,
+    **kwargs,
+) -> None:
     r"""Convert series of 3D TIFF files to Chimera MAP file.
 
     Parameters
@@ -362,21 +388,21 @@ def tif2cmap(tiffiles, cmapfile=None, fail=True, **kwargs):
         derived from the first TIFF file.
     fail : bool, optional
         If True (default), raise error when processing incompatible TIFF files.
-    kwargs : dict, optional
-        Additional parameters passed to the CmapFile.addmap function,
+    **kwargs
+        Optional extra arguments passed to the CmapFile.addmap function,
         e.g. verbose, step, origin, cell_angles, rotation_axis,
         rotation_angle, subsample, chunks, and compression.
 
     """
-    tiffiles = parse_files(tiffiles)
+    tiffiles_list = parse_files(tiffiles)
     if not cmapfile:
-        cmapfile = tiffiles[0] + '.cmap'
+        cmapfile = os.fspath(tiffiles_list[0]) + '.cmap'
     verbose = kwargs.get('verbose', False)
     if verbose:
         print(f"Creating '{cmapfile}'", flush=True)
     shape = dtype = None
     with CmapFile(cmapfile, 'w') as cmap:
-        for tiffile in tiffiles:
+        for tiffile in tiffiles_list:
             if verbose:
                 print('+', os.path.basename(tiffile), end=' ', flush=True)
             try:
@@ -401,7 +427,9 @@ def tif2cmap(tiffiles, cmapfile=None, fail=True, **kwargs):
                 print(flush=True)
 
 
-def lsm2cmap(lsmfile, cmapfile=None, **kwargs):
+def lsm2cmap(
+    lsmfile: PathLike, cmapfile: PathLike | None = None, **kwargs
+) -> None:
     """Convert 5D TZCYX LSM file to Chimera MAP files, one per channel.
 
     Parameters
@@ -411,8 +439,8 @@ def lsm2cmap(lsmfile, cmapfile=None, **kwargs):
     cmapfile : str, optional
         Name of the output CMAP file. If None (default), the name is
         derived from lsmfile.
-    kwargs : dict, optional
-        Additional parameters passed to the CmapFile.addmap function,
+    **kwargs
+        Optional extra arguments passed to the CmapFile.addmap function,
         e.g. verbose, step, origin, cell_angles, rotation_axis,
         rotation_angle, subsample, chunks, and compression.
 
@@ -428,6 +456,9 @@ def lsm2cmap(lsmfile, cmapfile=None, **kwargs):
             # tifffile > 2020.2.25 return squeezed shape and axes
             shape = series.get_shape(False)
             axes = series.get_axes(False)
+            if axes[:2] == 'MP' and shape[:2] == (1, 1):
+                axes = axes[2:]
+                shape = shape[2:]
         else:
             shape = series.shape
             axes = series.axes
@@ -456,10 +487,10 @@ def lsm2cmap(lsmfile, cmapfile=None, **kwargs):
         # iterate over Tiff pages containing data
         pages = iter(series.pages)
         for _ in range(shape[0]):  # iterate over time axis
-            data = []
+            datalist = []
             for _ in range(shape[1]):  # iterate over z slices
-                data.append(next(pages).asarray())
-            data = numpy.vstack(data).reshape(shape[1:])
+                datalist.append(next(pages).asarray())
+            data = numpy.vstack(datalist).reshape(shape[1:])
             for c in range(shape[2]):  # iterate over channels
                 # write datasets and attributes
                 cmaps[c].addmap(data=data[:, c], **kwargs)
@@ -470,7 +501,9 @@ def lsm2cmap(lsmfile, cmapfile=None, **kwargs):
             f.close()
 
 
-def array2cmap(data, axes, cmapfile, **kwargs):
+def array2cmap(
+    data: numpy.ndarray, axes: str, cmapfile: PathLike, **kwargs
+) -> None:
     """Save numpy ndarray to Chimera MAP files, one per channel.
 
     Parameters
@@ -482,8 +515,8 @@ def array2cmap(data, axes, cmapfile, **kwargs):
         May contain only 'CTZYX'.
     cmapfile : str
         Name of the output CMAP file.
-    kwargs : dict, optional
-        Additional parameters passed to the CmapFile.addmap function,
+    **kwargs
+        Optional extra arguments passed to the CmapFile.addmap function,
         e.g. verbose, step, origin, cell_angles, rotation_axis,
         rotation_angle, subsample, chunks, and compression.
 
@@ -494,6 +527,7 @@ def array2cmap(data, axes, cmapfile, **kwargs):
     try:
         # create one CMAP file per channel
         cmaps = []
+        cmapfile = os.fspath(cmapfile)
         if cmapfile.lower().endswith('.cmap'):
             cmapfile = cmapfile[:-5]
         if data.shape[0] > 1:
@@ -512,7 +546,7 @@ def array2cmap(data, axes, cmapfile, **kwargs):
             f.close()
 
 
-def oif2cmap(oiffile, cmapfile=None, **kwargs):
+def oif2cmap(oiffile: PathLike, cmapfile: PathLike = None, **kwargs) -> None:
     """Convert OIF or OIB files to Chimera MAP files, one per channel.
 
     Parameters
@@ -522,8 +556,8 @@ def oif2cmap(oiffile, cmapfile=None, **kwargs):
     cmapfile : str, optional
         Name of the output CMAP file. If None (default), the name is
         derived from oiffile.
-    kwargs : dict, optional
-        Additional parameters passed to the CmapFile.addmap function,
+    **kwargs
+        Optional extra arguments passed to the CmapFile.addmap function,
         e.g. verbose, step, origin, cell_angles, rotation_axis,
         rotation_angle, subsample, chunks, and compression.
 
@@ -532,11 +566,7 @@ def oif2cmap(oiffile, cmapfile=None, **kwargs):
     with OifFile(oiffile) as oif:
         if verbose:
             print(oif)
-        try:
-            tiffs = oif.series[0]
-        except Exception:
-            # oiffile < 2020.1.1
-            tiffs = oif.tiffs
+        tiffs = oif.series[0]
         data = tiffs.asarray()
         axes = tiffs.axes + 'YX'
         if verbose:
@@ -559,7 +589,7 @@ def oif2cmap(oiffile, cmapfile=None, **kwargs):
     array2cmap(data, axes, cmapfile, **kwargs)
 
 
-def oif_axis_size(oifsettings):
+def oif_axis_size(oifsettings: dict[str, Any]) -> dict[str, Any]:
     """Return dict of axes sizes from OIF main settings."""
     scale = {'nm': 1000.0, 'ms': 1000.0}
     result = {}
@@ -576,7 +606,9 @@ def oif_axis_size(oifsettings):
     return result
 
 
-def subsamples(data, maxsample=16, minshape=4):
+def subsamples(
+    data: numpy.ndarray, maxsample: int = 16, minshape: int = 4
+) -> Iterator[numpy.ndarray]:
     """Return iterator over data zoomed by 0.5."""
     # TODO: use faster mipmap or gaussian pyramid generator
     sample = 2
@@ -586,7 +618,7 @@ def subsamples(data, maxsample=16, minshape=4):
         yield data
 
 
-def validate_shape(shape, length=None):
+def validate_shape(shape: tuple[int, ...], length: int | None = None) -> None:
     """Raise ValueError if shape is not a sequence of positive integers."""
     try:
         if length is not None and len(shape) != length:
@@ -597,7 +629,9 @@ def validate_shape(shape, length=None):
         raise ValueError('invalid shape') from exc
 
 
-def parse_numbers(numbers, dtype=float, sep=','):
+def parse_numbers(
+    numbers: str, dtype: type = float, sep: str = ','
+) -> list[Any]:
     """Return list of numbers from string of separated numbers."""
     if not numbers:
         return []
@@ -607,7 +641,7 @@ def parse_numbers(numbers, dtype=float, sep=','):
         raise ValueError(f"not a '{sep}' separated list of numbers") from exc
 
 
-def parse_files(files):
+def parse_files(files: Sequence[PathLike]) -> Sequence[PathLike]:
     """Return list of file names from pattern or list of file names.
 
     Raise ValueError if no files are found.
@@ -618,13 +652,15 @@ def parse_files(files):
     #        files = natural_sorted(
     #            match.group(1) or match.group(2)
     #            for match in re.finditer(r'(?:"([^"\t\n\r\f\v]+))"|(\S+)',
-    #                                     files))
-    try:  # list of files
-        if os.path.isfile(files[0]):
+    try:
+        # list of files
+        if isinstance(files[0], os.PathLike) or os.path.isfile(files[0]):
             return files
     except Exception:
         pass
-    try:  # glob pattern
+    try:
+        # glob pattern
+        assert isinstance(files[0], str)
         files = natural_sorted(glob.glob(files[0]))
         files[0]  # noqa: validation
         return files
@@ -632,7 +668,7 @@ def parse_files(files):
         raise ValueError('no files found') from exc
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     """Command line usage main function."""
     if argv is None:
         argv = sys.argv
@@ -694,14 +730,16 @@ def main(argv=None):
         help='write subsampled datasets to CMAP file',
     )
 
-    options, files = parser.parse_args()
-    if not files:
+    options, filesarg = parser.parse_args()
+    if not filesarg:
         parser.error('no input files specified')
     try:
-        files = parse_files(files)
+        files = parse_files(filesarg)
+        if len(files) == 0:
+            raise ValueError
     except ValueError:
         parser.error('input file not found')
-    shape = parse_numbers(options.shape, int)
+    shape = tuple(parse_numbers(options.shape, int))
     if shape and len(shape) != 3:
         parser.error('invalid shape: expected 3 integers')
     shape = tuple(reversed(shape))  # C order
@@ -774,6 +812,7 @@ def main(argv=None):
         parser.error(f'do not know how to convert {filetype} to CMAP')
     if options.verbose:
         print('Done.', flush=True)
+    return 0
 
 
 if __name__ == '__main__':
