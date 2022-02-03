@@ -21,16 +21,19 @@ For command line usage run ``python -m cmapfile --help``
 
 :License: BSD 3-Clause
 
-:Version: 2021.2.26
+:Version: 2022.2.2
 
 Requirements
 ------------
-* `CPython >= 3.7 <https://www.python.org>`_
-* `Numpy 1.15 <https://www.numpy.org>`_
-* `Scipy 1.4 <https://www.scipy.org>`_
-* `H5py 2.10 <https://www.h5py.org/>`_
-* `Tifffile 2019.8.25 <https://pypi.org/project/tifffile/>`_
-* `Oiffile 2020.9.18 <https://pypi.org/project/oiffile/>`_
+This release has been tested with the following requirements and dependencies
+(other versions may work):
+
+* `CPython 3.8.10, 3.9.9, 3.10.1, 64-bit <https://www.python.org>`_
+* `Numpy 1.21.5 <https://pypi.org/project/numpy/>`_
+* `Scipy 1.7.3 <https://pypi.org/project/scipy/>`_
+* `H5py 3.6.0 <https://pypi.org/project/h5py/>`_
+* `Tifffile 2021.11.2  <https://pypi.org/project/tifffile/>`_  (optional)
+* `Oiffile 2021.6.6 <https://pypi.org/project/oiffile />`_ (optional)
 
 References
 ----------
@@ -80,6 +83,9 @@ The CMAP file format according to [1]::
 
 Revisions
 ---------
+2022.2.2
+    Add type hints.
+    Drop support for Python 3.7 and numpy < 1.19 (NEP29).
 2021.2.26
     Fix LSM conversion with tifffile >= 2021.2.26.
     Remove support for Python 3.6 (NEP 29).
