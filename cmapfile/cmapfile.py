@@ -35,38 +35,32 @@ Cmapfile is a Python library and console script to write Chimera Map (CMAP)
 files, HDF5 files containing series of 3D XYZ datasets.
 
 CMAP files can be created from numpy arrays and various file formats
-containing volume data, e.g. BIN, TIFF, LSM, OIF, and OIB.
+containing volume data, e.g., BIN, TIFF, LSM, OIF, and OIB.
 
-CMAP files can be visualized using UCSF Chimera [2], a highly extensible
-program for interactive visualization and analysis of molecular structures
-and related data.
+CMAP files can be visualized using UCSF Chimera [2], a program for interactive
+visualization and analysis of molecular structures and related data.
 
-For command line usage run ``python -m cmapfile --help``
-
-:Author:
-  `Christoph Gohlke <https://www.lfd.uci.edu/~gohlke/>`_
-
-:Organization:
-  Laboratory for Fluorescence Dynamics. University of California, Irvine
-
+:Author: `Christoph Gohlke <https://www.cgohlke.com>`_
 :License: BSD 3-Clause
-
-:Version: 2022.2.2
+:Version: 2022.9.29
 
 Requirements
 ------------
+
 This release has been tested with the following requirements and dependencies
 (other versions may work):
 
-* `CPython 3.8.10, 3.9.9, 3.10.1, 64-bit <https://www.python.org>`_
-* `Numpy 1.21.5 <https://pypi.org/project/numpy/>`_
-* `Scipy 1.7.3 <https://pypi.org/project/scipy/>`_
-* `H5py 3.6.0 <https://pypi.org/project/h5py/>`_
-* `Tifffile 2021.11.2  <https://pypi.org/project/tifffile/>`_  (optional)
-* `Oiffile 2021.6.6 <https://pypi.org/project/oiffile />`_ (optional)
+- `CPython 3.8.10, 3.9.13, 3.10.7, 3.11.0rc2 <https://www.python.org>`_
+  (32-bit platforms are deprecated)
+- `Numpy 1.21.5 <https://pypi.org/project/numpy/>`_
+- `Scipy 1.8.1 <https://pypi.org/project/scipy/>`_
+- `H5py 3.7.0 <https://pypi.org/project/h5py/>`_
+- `Tifffile 2022.8.12 <https://pypi.org/project/tifffile/>`_  (optional)
+- `Oiffile 2022.2.2 <https://pypi.org/project/oiffile />`_ (optional)
 
 References
 ----------
+
 1. Thomas Goddard. [Chimera-users] reading in hdf5 files in chimera.
    https://www.cgl.ucsf.edu/pipermail/chimera-users/2008-September/003052.html
 2. UCSF Chimera, an extensible molecular modeling system.
@@ -75,12 +69,17 @@ References
 
 Examples
 --------
+
+Print the command line usage::
+
+    python -m cmapfile --help
+
 Convert a 5D LSM file to CMAP file::
 
     python -m cmapfile "/my data directory/large.lsm"
 
 Convert all BIN files in the current directory to test.cmap. The BIN files
-are known to contain 128x128x64 samples of 16 bit integers. The CMAP file
+are known to contain 128x128x64 samples of 16-bit integers. The CMAP file
 will store float32 maps using subsampling up to 16::
 
     python -m cmapfile --shape 128,128,64 --step 1,1,2 --dtype i2
@@ -92,6 +91,7 @@ Change the step size in the CMAP file::
 
 Notes
 -----
+
 The CMAP file format according to [1]::
 
     Example of HDF format written by Chimera (Chimera map format) follows.
@@ -105,6 +105,9 @@ The CMAP file format according to [1]::
      cell_angles (90.0, 90.0, 90.0) (attribute)
      rotation_axis (0.0, 0.0, 1.0) (attribute)
      rotation_angle 45.0 (attribute, degrees)
+     color (1.0, 1.0, 0, 1.0) (attribute, rgba 0-1 float)
+     time 5 (attribute, time series frame number)
+     channel 0 (attribute, integer for multichannel data)
      /data (3d array of uint8 (123,542,82)) (dataset, any name allowed)
      /data_x (3d array of uint8 (123,542,82), alternate chunk shape) (dataset)
      /data_2 (3d array of uint8 (61,271,41)) (dataset, any name allowed)
@@ -113,26 +116,42 @@ The CMAP file format according to [1]::
 
 Revisions
 ---------
+
+2022.9.29
+
+- Make subsampling compatible with ChimeraX (breaking).
+- Fix deprecated import of scipy.ndimage.interpolation.zoom.
+- Switch to Google style docstrings.
+
 2022.2.2
-    Add type hints.
-    Drop support for Python 3.7 and numpy < 1.19 (NEP29).
+
+- Add type hints.
+- Drop support for Python 3.7 and numpy < 1.19 (NEP29).
+
 2021.2.26
-    Fix LSM conversion with tifffile >= 2021.2.26.
-    Remove support for Python 3.6 (NEP 29).
+
+- Fix LSM conversion with tifffile >= 2021.2.26.
+- Remove support for Python 3.6 (NEP 29).
+
 2020.1.1
-    Do not write name attribute.
-    Remove support for Python 2.7 and 3.5.
-    Update copyright.
+
+- Do not write name attribute.
+- Remove support for Python 2.7 and 3.5.
+- Update copyright.
+
 2018.8.30
-    Move cmapfile.py into cmapfile package.
+
+- Move cmapfile.py into cmapfile package.
+
 2014.10.10
-    Initial release.
+
+- Initial release.
 
 """
 
 from __future__ import annotations
 
-__version__ = '2022.2.2'
+__version__ = '2022.9.29'
 
 __all__ = [
     'CmapFile',
@@ -152,42 +171,62 @@ import numpy
 import h5py
 
 try:
-    from ndimage.interpolation import zoom
+    from scipy.ndimage import zoom
 except ImportError:
-    from scipy.ndimage.interpolation import zoom
+    from ndimage import zoom
 
 from tifffile import TiffFile, transpose_axes, natural_sorted, product
 from oiffile import OifFile
 
-from typing import Any, Union, Sequence, Iterator
+from typing import TYPE_CHECKING
 
-ArrayLike = Union[numpy.ndarray, list, tuple]
-PathLike = Union[str, os.PathLike]
+if TYPE_CHECKING:
+    from typing import Any, Union, Sequence, Iterator
+
+    try:
+        from numpy.typing import ArrayLike
+    except ImportError:
+        # numpy < 1.20
+        from numpy import ndarray as ArrayLike
+
+    PathLike = Union[str, os.PathLike]
 
 
 class CmapFile(h5py.File):
-    """Write Chimera MAP formatted HDF5 file."""
+    """Write Chimera MAP formatted HDF5 file.
+
+    Parameters:
+        filename:
+            Name of file to write.
+        mode:
+            File open mode.
+        **kwargs:
+            Arguments passed to `h5py.File`.
+
+    """
 
     mapcounter: int
 
-    def __init__(self, filename: PathLike, mode: str = 'w', **kwargs) -> None:
-        """Create new HDF5 file object.
-
-        See h5py.File for parameters.
-
-        """
+    def __init__(
+        self, filename: PathLike, /, mode: str = 'w', **kwargs
+    ) -> None:
         h5py.File.__init__(self, name=filename, mode=mode, **kwargs)
         self.mapcounter = 0
 
     def addmap(
         self,
         data: ArrayLike,
+        /,
+        *,
         name: str | None = None,
         step: Sequence[float] | None = None,
         origin: Sequence[float] | None = None,
-        cell_angles=None,
+        cell_angles: Sequence[float] | None = None,
         rotation_axis: Sequence[float] | None = None,
         rotation_angle: float | None = None,
+        color: Sequence[float] | None = None,
+        time: int | None = None,
+        channel: int | None = None,
         symmetries=None,
         astype: numpy.dtype = None,
         subsample: int = 16,
@@ -197,40 +236,46 @@ class CmapFile(h5py.File):
     ) -> None:
         """Create HDF5 group and datasets according to CMAP format.
 
-        The order of axes is XYZ for 'step', 'origin', 'cell_angles', and
-        'rotation_axis'. Data 'shape' and 'chunks' sizes are in ZYX order.
+        The order of axes is XYZ for `step`, `origin`, `cell_angles`, and
+        `rotation_axis`. Data shape and `chunks` sizes are in ZYX order.
 
-        Parameters
-        ----------
-        data : array_like
-            Map data to store. Must be three dimensional.
-        name : str, optional
-            Name of map.
-        step : sequence of 3 float, optional
-            Spacing between samples in XYZ dimensions.
-            Chimera defaults to (1.0, 1.0, 1.0)
-        origin : sequence of 3 float, optional
-            Chimera defaults to (0.0, 0.0, 0.0)
-        cell_angles : sequence of 3 float, optional
-            Chimera defaults to (90.0, 90.0, 90.0)
-        rotation_axis : sequence of 3 float, optional
-            Axis to rotate around. Chimera defaults to (0.0, 0.0, 1.0)
-        rotation_angle : float, optional
-            Extent to rotate around rotation_axis. Chimera defaults to 0.0.
-        symmetries : None, optional
-            Undocumented.
-        astype : numpy dtype, optional
-            Datatype of HDF dataset, e.g. 'float32'.
-            By default this is data.dtype.
-        subsample : int, optional
-            Store subsampled datasets up to the specified number (default: 16).
-        chunks : bool or sequence of 3 int, optional
-            Size of chunks to store in datasets in ZYX order.
-            By default HDF5 determines this.
-        compression : str, optional
-            Type of HDF5 data compression, e.g. None (default) or 'gzip'.
-        verbose : bool, optional
-            If False (default), do not print messages to stdout.
+        Parameters:
+            data:
+                Map data to store. Must be three dimensional.
+            name:
+                Name of map.
+            step:
+                Spacing between samples in XYZ dimensions.
+                Chimera defaults to (1.0, 1.0, 1.0).
+            origin:
+                Origin in XYZ dimensions.
+                Chimera defaults to (0.0, 0.0, 0.0).
+            cell_angles:
+                Chimera defaults to (90.0, 90.0, 90.0).
+            rotation_axis:
+                Axis to rotate around. Chimera defaults to (0.0, 0.0, 1.0).
+            rotation_angle:
+                Extent to rotate around rotation_axis. Chimera defaults to 0.0.
+            color:
+                RGBA color values, e.g. (1.0, 1.0, 0, 1.0).
+            time:
+                Time series frame number.
+            channel:
+                Multi-channel index.
+            symmetries:
+                Undocumented.
+            astype:
+                Datatype of HDF dataset, e.g. 'float32'.
+                By default, this is data.dtype.
+            subsample:
+                Store subsampled datasets up to specified number.
+            chunks:
+                Size of chunks to store in datasets in ZYX order.
+                By default, the chunk size is determined by HDF5.
+            compression:
+                Type of HDF5 data compression, e.g. None or 'gzip'.
+            verbose:
+                Print messages to stdout.
 
         """
         if astype:
@@ -260,6 +305,12 @@ class CmapFile(h5py.File):
             group.attrs['rotation_axis'] = rotation_axis
         if rotation_angle:
             group.attrs['rotation_angle'] = rotation_angle
+        if color:
+            group.attrs['color'] = color
+        if time:
+            group.attrs['time'] = time
+        if channel:
+            group.attrs['channel'] = channel
         if symmetries:
             group.attrs['symmetries'] = symmetries
         # create main dataset
@@ -285,13 +336,11 @@ class CmapFile(h5py.File):
             dset.attrs['subsample_spacing'] = sample, sample, sample
         self.mapcounter += 1
 
-    def setstep(self, step: Sequence[float]) -> None:
-        """Set 'step' attribute on all datasets.
+    def setstep(self, step: Sequence[float], /) -> None:
+        """Set `step` attribute on all datasets.
 
-        Parameters
-        ----------
-        step : sequence of 3 float
-            Spacing between samples in XYZ dimensions.
+        Parameters:
+            step: Spacing between samples in XYZ dimensions.
 
         """
         for name, group in self.items():
@@ -301,6 +350,7 @@ class CmapFile(h5py.File):
 
 def bin2cmap(
     binfiles: Sequence[PathLike] | str,
+    /,
     shape: tuple[int, ...],
     dtype: numpy.dtype,
     offset: int = 0,
@@ -312,29 +362,26 @@ def bin2cmap(
 
     SimFCS BIN files contain homogeneous data of any type and shape,
     stored C-contiguously in little endian order.
-    A common format is: shape=(-1, 256, 256), dtype='uint16'.
+    A common format is `shape=(-1, 256, 256), dtype='uint16'`.
 
     TODO: Support generic strides, storage order, and byteorder.
 
-    Parameters
-    ----------
-    binfiles : str or sequence of str
-        List of BIN file names or file pattern, e.g. '\*.bin'
-    shape : tuple of 3 int
-        Shape of data in BIN files in ZYX order, e.g. (32, 256, 256).
-    dtype : numpy dtype
-        Type of data in the BIN files, e.g. 'uint16'.
-    offset : int, optional
-        Number of bytes to skip at beginning of BIN file (default: 0).
-    cmapfile : str, optional
-        Name of the output CMAP file. If None (default), the name is
-        derived from the first BIN file.
-    fail : bool, optional
-        If True (default), raise error when reading invalid BIN files.
-    **kwargs
-        Additional parameters passed to the CmapFile.addmap function,
-        e.g. verbose, step, origin, cell_angles, rotation_axis,
-        rotation_angle, subsample, chunks, and compression.
+    Parameters:
+        binfiles:
+            List of BIN file names or file pattern, e.g. '\*.bin'
+        shape:
+            Shape of data in BIN files in ZYX order, e.g. (32, 256, 256).
+        dtype:
+            Type of data in BIN files, e.g. 'uint16'.
+        offset:
+            Number of bytes to skip at beginning of BIN file.
+        cmapfile:
+            Name of output CMAP file.
+            If None, the name is derived from the first BIN file.
+        fail:
+            Raise error when reading invalid BIN files.
+        **kwargs:
+            Arguments passed to :py:meth:`CmapFile.addmap`.
 
     """
     binfiles_list = parse_files(binfiles)
@@ -372,26 +419,24 @@ def bin2cmap(
 
 def tif2cmap(
     tiffiles: Sequence[PathLike],
+    /,
     cmapfile: PathLike | None = None,
     fail: bool = True,
     **kwargs,
 ) -> None:
     r"""Convert series of 3D TIFF files to Chimera MAP file.
 
-    Parameters
-    ----------
-    tiffiles : str or sequence of str
-        List of TIFF file names or file pattern, e.g. '\*.tif'.
-        Files must contain 3D data of matching shape and dtype.
-    cmapfile : str, optional
-        Name of the output CMAP file. If None (default), the name is
-        derived from the first TIFF file.
-    fail : bool, optional
-        If True (default), raise error when processing incompatible TIFF files.
-    **kwargs
-        Optional extra arguments passed to the CmapFile.addmap function,
-        e.g. verbose, step, origin, cell_angles, rotation_axis,
-        rotation_angle, subsample, chunks, and compression.
+    Parameters:
+        tiffiles:
+            TIFF file names or file pattern, e.g. '\*.tif'.
+            Files must contain 3D data of matching shape and dtype.
+        cmapfile:
+            Name of output CMAP file.
+            By default, the name is derived from the first TIFF file.
+        fail:
+            Raise error when processing incompatible TIFF files.
+        **kwargs:
+            Arguments passed to :py:meth:`CmapFile.addmap`.
 
     """
     tiffiles_list = parse_files(tiffiles)
@@ -428,21 +473,18 @@ def tif2cmap(
 
 
 def lsm2cmap(
-    lsmfile: PathLike, cmapfile: PathLike | None = None, **kwargs
+    lsmfile: PathLike, /, cmapfile: PathLike | None = None, **kwargs
 ) -> None:
     """Convert 5D TZCYX LSM file to Chimera MAP files, one per channel.
 
-    Parameters
-    ----------
-    lsmfile : str
-        Name of the LSM file to convert.
-    cmapfile : str, optional
-        Name of the output CMAP file. If None (default), the name is
-        derived from lsmfile.
-    **kwargs
-        Optional extra arguments passed to the CmapFile.addmap function,
-        e.g. verbose, step, origin, cell_angles, rotation_axis,
-        rotation_angle, subsample, chunks, and compression.
+    Parameters:
+        lsmfile:
+            Name of LSM file to convert.
+        cmapfile:
+            Name of output CMAP file.
+            If None, the name is derived from `lsmfile`.
+        **kwargs:
+            Arguments passed to :py:meth:`CmapFile.addmap`.
 
     """
     verbose = kwargs.get('verbose', False)
@@ -486,14 +528,14 @@ def lsm2cmap(
                 pass
         # iterate over Tiff pages containing data
         pages = iter(series.pages)
-        for _ in range(shape[0]):  # iterate over time axis
+        for t in range(shape[0]):  # iterate over time axis
             datalist = []
             for _ in range(shape[1]):  # iterate over z slices
                 datalist.append(next(pages).asarray())
             data = numpy.vstack(datalist).reshape(shape[1:])
             for c in range(shape[2]):  # iterate over channels
                 # write datasets and attributes
-                cmaps[c].addmap(data=data[:, c], **kwargs)
+                cmaps[c].addmap(data[:, c], time=t, **kwargs)
     finally:
         if lsm:
             lsm.close()
@@ -502,23 +544,20 @@ def lsm2cmap(
 
 
 def array2cmap(
-    data: numpy.ndarray, axes: str, cmapfile: PathLike, **kwargs
+    data: numpy.ndarray, /, axes: str, cmapfile: PathLike, **kwargs
 ) -> None:
     """Save numpy ndarray to Chimera MAP files, one per channel.
 
-    Parameters
-    ----------
-    data : ndarray
-        Three to 5 dimensional array.
-    axes : str
-        Specifies type and order of axes in data array.
-        May contain only 'CTZYX'.
-    cmapfile : str
-        Name of the output CMAP file.
-    **kwargs
-        Optional extra arguments passed to the CmapFile.addmap function,
-        e.g. verbose, step, origin, cell_angles, rotation_axis,
-        rotation_angle, subsample, chunks, and compression.
+    Parameters:
+        data:
+            Three to 5 dimensional array.
+        axes:
+            Specifies type and order of axes in data array.
+            May contain only 'CTZYX'.
+        cmapfile:
+            Name of output CMAP file.
+        **kwargs:
+            Arguments passed to :py:meth:`CmapFile.addmap`.
 
     """
     if len(data.shape) != len(axes):
@@ -540,26 +579,25 @@ def array2cmap(
         # iterate over data and write cmaps
         for c in range(data.shape[0]):  # channels
             for t in range(data.shape[1]):  # times
-                cmaps[c].addmap(data=data[c, t], **kwargs)
+                cmaps[c].addmap(data[c, t], time=t, **kwargs)
     finally:
         for f in cmaps:
             f.close()
 
 
-def oif2cmap(oiffile: PathLike, cmapfile: PathLike = None, **kwargs) -> None:
+def oif2cmap(
+    oiffile: PathLike, /, cmapfile: PathLike = None, **kwargs
+) -> None:
     """Convert OIF or OIB files to Chimera MAP files, one per channel.
 
-    Parameters
-    ----------
-    oiffile : str
-        Name of the OIF or OIB file to convert.
-    cmapfile : str, optional
-        Name of the output CMAP file. If None (default), the name is
-        derived from oiffile.
-    **kwargs
-        Optional extra arguments passed to the CmapFile.addmap function,
-        e.g. verbose, step, origin, cell_angles, rotation_axis,
-        rotation_angle, subsample, chunks, and compression.
+    Parameters:
+        oiffile:
+            Name of OIF or OIB file to convert.
+        cmapfile:
+            Name of output CMAP file.
+            By default, the name is derived from `oiffile`.
+        **kwargs:
+            Arguments passed to :py:meth:`CmapFile.addmap`.
 
     """
     verbose = kwargs.get('verbose', False)
@@ -589,8 +627,13 @@ def oif2cmap(oiffile: PathLike, cmapfile: PathLike = None, **kwargs) -> None:
     array2cmap(data, axes, cmapfile, **kwargs)
 
 
-def oif_axis_size(oifsettings: dict[str, Any]) -> dict[str, Any]:
-    """Return dict of axes sizes from OIF main settings."""
+def oif_axis_size(oifsettings: dict[str, Any], /) -> dict[str, Any]:
+    """Return mapping of axes sizes from OIF main settings.
+
+    Parameters:
+        oifsettings: OIF main settings.
+
+    """
     scale = {'nm': 1000.0, 'ms': 1000.0}
     result = {}
     i = 0
@@ -607,19 +650,43 @@ def oif_axis_size(oifsettings: dict[str, Any]) -> dict[str, Any]:
 
 
 def subsamples(
-    data: numpy.ndarray, maxsample: int = 16, minshape: int = 4
+    data: numpy.ndarray, /, maxsample: int = 16, minshape: int = 4
 ) -> Iterator[numpy.ndarray]:
-    """Return iterator over data zoomed by 0.5."""
+    """Return iterator over data zoomed by ~0.5.
+
+    Parameters:
+        data:
+            Data to be resampled.
+        maxsample:
+            Inverse of maximum zoom factor.
+        minshape:
+            Minimum size of any dimension.
+
+    """
     # TODO: use faster mipmap or gaussian pyramid generator
+    zoomed = data
+    zooms = [1.0 for size in data.shape]
     sample = 2
-    while sample <= maxsample and all(i >= minshape for i in data.shape):
-        data = zoom(data, 0.5, prefilter=False)
+    while sample <= maxsample and all(i >= minshape for i in zoomed.shape):
+        # this formula is used by ChimeraX to calculate subsample zoom factors
+        zooms = [((i + sample - 1) // sample) / i for i in data.shape]
+        zoomed = zoom(data, zooms, prefilter=False)
+        yield zoomed
         sample *= 2
-        yield data
 
 
-def validate_shape(shape: tuple[int, ...], length: int | None = None) -> None:
-    """Raise ValueError if shape is not a sequence of positive integers."""
+def validate_shape(
+    shape: tuple[int, ...], /, length: int | None = None
+) -> None:
+    """Raise ValueError if shape is not a sequence of positive integers.
+
+    Parameters:
+        shape:
+            Shape to validate.
+        length:
+            Expected length of `shape`.
+
+    """
     try:
         if length is not None and len(shape) != length:
             raise ValueError()
@@ -630,9 +697,19 @@ def validate_shape(shape: tuple[int, ...], length: int | None = None) -> None:
 
 
 def parse_numbers(
-    numbers: str, dtype: type = float, sep: str = ','
+    numbers: str, /, dtype: type = float, sep: str = ','
 ) -> list[Any]:
-    """Return list of numbers from string of separated numbers."""
+    """Return list of numbers from string of separated numbers.
+
+    Parameters:
+        numbers:
+            Numbers of type `dtype` separated by `sep.`
+        dtype:
+            Type of numbers.
+        sep:
+            Separator used to split numbers.
+
+    """
     if not numbers:
         return []
     try:
@@ -641,10 +718,14 @@ def parse_numbers(
         raise ValueError(f"not a '{sep}' separated list of numbers") from exc
 
 
-def parse_files(files: Sequence[PathLike]) -> Sequence[PathLike]:
+def parse_files(files: Sequence[PathLike], /) -> Sequence[PathLike]:
     """Return list of file names from pattern or list of file names.
 
-    Raise ValueError if no files are found.
+    Parameters:
+        files: Sequence of file names.
+
+    Raises:
+        ValueError: No files are found.
 
     """
     #    # list of files as string
