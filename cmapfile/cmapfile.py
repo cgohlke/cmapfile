@@ -1,6 +1,6 @@
 # cmapfile.py
 
-# Copyright (c) 2014-2023, Christoph Gohlke
+# Copyright (c) 2014-2024, Christoph Gohlke
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,14 +35,14 @@ Cmapfile is a Python library and console script to write Chimera Map (CMAP)
 files, HDF5 files containing series of 3D XYZ datasets.
 
 CMAP files can be created from numpy arrays and various file formats
-containing volume data, e.g., BIN, TIFF, LSM, OIF, and OIB.
+containing volume data, for example, BIN, TIFF, LSM, OIF, and OIB.
 
 CMAP files can be visualized using UCSF Chimera [2], a program for interactive
 visualization and analysis of molecular structures and related data.
 
 :Author: `Christoph Gohlke <https://www.cgohlke.com>`_
 :License: BSD 3-Clause
-:Version: 2023.8.30
+:Version: 2024.8.28
 
 Quickstart
 ----------
@@ -67,15 +67,20 @@ Requirements
 This revision was tested with the following requirements and dependencies
 (other versions may work):
 
-- `CPython <https://www.python.org>`_ 3.9.13, 3.10.11, 3.11.5, 3.12rc
-- `NumPy <https://pypi.org/project/numpy/>`_ 1.25.2
-- `Scipy <https://pypi.org/project/scipy/>`_ 1.11.2
-- `H5py <https://pypi.org/project/h5py/>`_ 3.9.0
-- `Tifffile <https://pypi.org/project/tifffile/>`_ 2023.8.30 (optional)
-- `Oiffile <https://pypi.org/project/oiffile/>`_ 2023.8.30 (optional)
+- `CPython <https://www.python.org>`_ 3.10.11, 3.11.9, 3.12.5, 3.13.0rc1 64-bit
+- `NumPy <https://pypi.org/project/numpy/>`_ 2.1.0
+- `Scipy <https://pypi.org/project/scipy/>`_ 1.14.1
+- `H5py <https://pypi.org/project/h5py/>`_ 3.11.0
+- `Tifffile <https://pypi.org/project/tifffile/>`_ 2024.8.24
+- `Oiffile <https://pypi.org/project/oiffile/>`_ 2024.5.24
 
 Revisions
 ---------
+
+2024.8.28
+
+- Fix lsm2cmap with tifffile > 2024.8.24.
+- Drop support for Python 3.9 and numpy < 1.24 (NEP29).
 
 2023.8.30
 
@@ -175,21 +180,24 @@ Print the cmapfile script usage::
     --version             show program's version number and exit
     -h, --help            show this help message and exit
     -q, --quiet
-    --filetype=FILETYPE   type of input file(s), e.g. BIN, LSM, OIF, TIF
-    --dtype=DTYPE         type of data in BIN files. e.g. uint16
-    --shape=SHAPE         shape of data in BIN files in F order, e.g 256,256,32
+    --filetype=FILETYPE   type of input file(s).
+                          For example, BIN, LSM, OIF, TIF
+    --dtype=DTYPE         type of data in BIN files. For example, uint16
+    --shape=SHAPE         shape of data in BIN files in F order.
+                          For example, 256,256,32
     --offset=OFFSET       number of bytes to skip at beginning of BIN files
-    --step=STEP           stepsize of data in files in F order, e.g 1.0,1.0,8.0
+    --step=STEP           stepsize of data in files in F order.
+                          For example, 1.0,1.0,8.0
     --cmap=CMAP           name of output CMAP file
-    --astype=ASTYPE       type of data in CMAP file. e.g. float32
+    --astype=ASTYPE       type of data in CMAP file. For example, float32
     --subsample=SUBSAMPLE
-                            write subsampled datasets to CMAP file
+                          write subsampled datasets to CMAP file
 
 """
 
 from __future__ import annotations
 
-__version__ = '2023.8.30'
+__version__ = '2024.8.28'
 
 __all__ = [
     'CmapFile',
@@ -204,18 +212,12 @@ import glob
 import os
 import sys
 import warnings
+from typing import TYPE_CHECKING
 
 import h5py
 import numpy
-
-try:
-    from scipy.ndimage import zoom
-except ImportError:
-    from ndimage import zoom
-
-from typing import TYPE_CHECKING
-
 from oiffile import OifFile
+from scipy.ndimage import zoom
 from tifffile import TiffFile, natural_sorted, product, transpose_axes
 
 if TYPE_CHECKING:
@@ -290,7 +292,8 @@ class CmapFile(h5py.File):
             rotation_angle:
                 Extent to rotate around rotation_axis. Chimera defaults to 0.0.
             color:
-                RGBA color values, e.g. (1.0, 1.0, 0, 1.0).
+                RGBA color values.
+                For example, (1.0, 1.0, 0, 1.0).
             time:
                 Time series frame number.
             channel:
@@ -298,7 +301,8 @@ class CmapFile(h5py.File):
             symmetries:
                 Undocumented.
             astype:
-                Datatype of HDF dataset, e.g. 'float32'.
+                Datatype of HDF dataset.
+                For example, 'float32'.
                 By default, this is data.dtype.
             subsample:
                 Store subsampled datasets up to specified number.
@@ -306,7 +310,8 @@ class CmapFile(h5py.File):
                 Size of chunks to store in datasets in ZYX order.
                 By default, the chunk size is determined by HDF5.
             compression:
-                Type of HDF5 data compression, e.g. None or 'gzip'.
+                Type of HDF5 data compression.
+                For example, None or 'gzip'.
             verbose:
                 Print messages to stdout.
 
@@ -401,11 +406,14 @@ def bin2cmap(
 
     Parameters:
         binfiles:
-            List of BIN file names or file pattern, e.g. '\*.bin'
+            List of BIN file names or file pattern.
+            For example, '\*.bin'
         shape:
-            Shape of data in BIN files in ZYX order, e.g. (32, 256, 256).
+            Shape of data in BIN files in ZYX order,
+            For example, (32, 256, 256).
         dtype:
-            Type of data in BIN files, e.g. 'uint16'.
+            Type of data in BIN files.
+            For example, 'uint16'.
         offset:
             Number of bytes to skip at beginning of BIN file.
         cmapfile:
@@ -461,7 +469,8 @@ def tif2cmap(
 
     Parameters:
         tiffiles:
-            TIFF file names or file pattern, e.g. '\*.tif'.
+            TIFF file names or file pattern.
+            For example, '\*.tif'.
             Files must contain 3D data of matching shape and dtype.
         cmapfile:
             Name of output CMAP file.
@@ -541,7 +550,11 @@ def lsm2cmap(
             shape = series.shape
             axes = series.axes
         if axes != 'TZCYX':
-            raise ValueError(f'not a 5D LSM file (expected TZCYX, got {axes})')
+            if axes == 'ZCYX':
+                axes = 'TZCYX'
+                shape = (1,) + shape
+            else:
+                raise ValueError(f'not a 5D LSM file ({axes=} != TZCYX)')
         if verbose:
             print(lsm)
             print(shape, axes, flush=True)
@@ -554,12 +567,13 @@ def lsm2cmap(
         # voxel/step sizes
         if not kwargs.get('step', None):
             try:
-                attrs = lsm[0].cz_lsm_info
-                kwargs['step'] = (
-                    attrs['voxel_size_x'] / attrs['voxel_size_x'],
-                    attrs['voxel_size_y'] / attrs['voxel_size_x'],
-                    attrs['voxel_size_z'] / attrs['voxel_size_x'],
-                )
+                attrs = lsm.lsm_metadata
+                if attrs is not None:
+                    kwargs['step'] = (
+                        attrs['voxel_size_x'] / attrs['voxel_size_x'],
+                        attrs['voxel_size_y'] / attrs['voxel_size_x'],
+                        attrs['voxel_size_z'] / attrs['voxel_size_x'],
+                    )
             except Exception:
                 pass
         # iterate over Tiff pages containing data
@@ -567,7 +581,9 @@ def lsm2cmap(
         for t in range(shape[0]):  # iterate over time axis
             datalist = []
             for _ in range(shape[1]):  # iterate over z slices
-                datalist.append(next(pages).asarray())
+                page = next(pages)
+                assert page is not None
+                datalist.append(page.asarray())
             data = numpy.vstack(datalist).reshape(shape[1:])
             for c in range(shape[2]):  # iterate over channels
                 # write datasets and attributes
@@ -758,7 +774,7 @@ def parse_numbers(
     try:
         return [dtype(i) for i in numbers.split(sep)]
     except Exception as exc:
-        raise ValueError(f"not a '{sep}' separated list of numbers") from exc
+        raise ValueError(f'not a {sep!r} separated list of numbers') from exc
 
 
 def parse_files(
@@ -814,19 +830,19 @@ def main(argv: list[str] | None = None) -> int:
         '--filetype',
         dest='filetype',
         default=None,
-        help='type of input file(s), e.g. BIN, LSM, OIF, TIF',
+        help='type of input file(s). For example, BIN, LSM, OIF, TIF',
     )
     opt(
         '--dtype',
         dest='dtype',
         default=None,
-        help='type of data in BIN files. e.g. uint16',
+        help='type of data in BIN files. For example, uint16',
     )
     opt(
         '--shape',
         dest='shape',
         default=None,
-        help='shape of data in BIN files in F order, e.g. 256,256,32',
+        help='shape of data in BIN files in F order. For example, 256,256,32',
     )
     opt(
         '--offset',
@@ -839,14 +855,14 @@ def main(argv: list[str] | None = None) -> int:
         '--step',
         dest='step',
         default=None,
-        help='stepsize of data in files in F order, e.g. 1.0,1.0,8.0',
+        help='stepsize of data in files in F order. For example, 1.0,1.0,8.0',
     )
     opt('--cmap', dest='cmap', default=None, help='name of output CMAP file')
     opt(
         '--astype',
         dest='astype',
         default=None,
-        help='type of data in CMAP file. e.g. float32',
+        help='type of data in CMAP file. For example, float32',
     )
     opt(
         '--subsample',
