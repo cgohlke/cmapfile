@@ -85,7 +85,7 @@ setup(
     },
     packages=['cmapfile'],
     package_data={'cmapfile': ['py.typed']},
-    python_requires='>=3.9',
+    python_requires='>=3.10',
     install_requires=[
         'numpy',
         'scipy',
