@@ -15,7 +15,7 @@ visualization and analysis of molecular structures and related data.
 
 :Author: `Christoph Gohlke <https://www.cgohlke.com>`_
 :License: BSD 3-Clause
-:Version: 2024.8.28
+:Version: 2025.1.1
 
 Quickstart
 ----------
@@ -40,15 +40,20 @@ Requirements
 This revision was tested with the following requirements and dependencies
 (other versions may work):
 
-- `CPython <https://www.python.org>`_ 3.10.11, 3.11.9, 3.12.5, 3.13.0rc1 64-bit
-- `NumPy <https://pypi.org/project/numpy/>`_ 2.1.0
+- `CPython <https://www.python.org>`_ 3.10.11, 3.11.9, 3.12.8, 3.13.1 64-bit
+- `NumPy <https://pypi.org/project/numpy/>`_ 2.1.3
 - `Scipy <https://pypi.org/project/scipy/>`_ 1.14.1
-- `H5py <https://pypi.org/project/h5py/>`_ 3.11.0
-- `Tifffile <https://pypi.org/project/tifffile/>`_ 2024.8.24
-- `Oiffile <https://pypi.org/project/oiffile/>`_ 2024.5.24
+- `H5py <https://pypi.org/project/h5py/>`_ 3.12.1
+- `Tifffile <https://pypi.org/project/tifffile/>`_ 2024.12.12
+- `Oiffile <https://pypi.org/project/oiffile/>`_ 2025.1.1
 
 Revisions
 ---------
+
+2025.1.1
+
+- Improve type hints.
+- Support Python 3.13.
 
 2024.8.28
 
@@ -73,12 +78,12 @@ Revisions
 2021.2.26
 
 - Fix LSM conversion with tifffile >= 2021.2.26.
-- Remove support for Python 3.6 (NEP 29).
+- Drop support for Python 3.6 (NEP 29).
 
 2020.1.1
 
 - Do not write name attribute.
-- Remove support for Python 2.7 and 3.5.
+- Drop support for Python 2.7 and 3.5.
 - Update copyright.
 
 2018.8.30
